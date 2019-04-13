@@ -1,0 +1,20 @@
+#!/bin/sh
+
+touch /etc/config/castnow
+
+lang=`uci get castnow.@web[0].lang 2> /dev/null`
+if [ "$lang" != "" ] ; then
+	exit 0
+fi
+
+uci -q batch <<-EOT
+		add castnow web
+		set castnow.@web[0].lang=en
+		set castnow.@web[0].model=CastNow-Light
+		set castnow.@web[0].userid=f6fdffe48c908deb0f4c3bd36c032e72
+		set castnow.@web[0].version=`cat /etc/castnow.version`
+		set castnow.@web[0].hversion=Light
+		commit castnow
+EOT
+
+exit 0

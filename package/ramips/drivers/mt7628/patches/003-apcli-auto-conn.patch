@@ -1,0 +1,51 @@
+Index: mt7628-p4rev-120395/src/embedded/ap/apcli_ctrl.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/apcli_ctrl.c	2019-03-02 22:36:11.290885199 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/apcli_ctrl.c	2019-03-02 22:36:11.278885198 +0800
+@@ -722,7 +722,15 @@
+ 		pApCliEntry->ProbeReqCnt = 0;
+ 		
+ 		if (pAd->ApCfg.ApCliAutoConnectRunning == TRUE)
++		{      
+ 			ApCliSwitchCandidateAP(pAd);
++		}
++		else
++		{
++			pAd->ApCfg.ApCliAutoConnectRunning = TRUE;
++			ApSiteSurvey(pAd, NULL, SCAN_ACTIVE, FALSE);
++		}
++
+ 		return;
+ 	}
+ #endif /* APCLI_AUTO_CONNECT_SUPPORT */
+Index: mt7628-p4rev-120395/src/embedded/ap/apcli_sync.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/apcli_sync.c	2019-03-02 22:36:11.290885199 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/apcli_sync.c	2019-03-02 22:36:56.392373572 +0800
+@@ -586,7 +586,7 @@
+ 	IN PRTMP_ADAPTER pAd,
+ 	IN MLME_QUEUE_ELEM *Elem) 
+ {
+-	APCLI_CTRL_MSG_STRUCT ApCliCtrlMsg;
++	//APCLI_CTRL_MSG_STRUCT ApCliCtrlMsg;
+ 	USHORT ifIndex = (USHORT)(Elem->Priv);
+ 	PULONG pCurrState = &pAd->ApCfg.ApCliTab[ifIndex].SyncCurrState;
+ 	APCLI_STRUCT *pApCliEntry = NULL;
+@@ -606,6 +606,7 @@
+ 	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("APCLI_SYNC - MlmeAux.Bssid=%02x:%02x:%02x:%02x:%02x:%02x\n",
+ 								PRINT_MAC(pApCliEntry->MlmeAux.Bssid)));
+ 
++#if 0
+ 	if(!MAC_ADDR_EQUAL(pApCliEntry->MlmeAux.Bssid, ZERO_MAC_ADDR))
+ 	{
+ 		ApCliCtrlMsg.Status = MLME_SUCCESS;
+@@ -620,7 +621,9 @@
+ 	{
+ 		MlmeEnqueue(pAd, APCLI_CTRL_STATE_MACHINE, APCLI_CTRL_JOIN_REQ_TIMEOUT, 0, NULL, ifIndex);
+ 	}
++#endif
+ 
++	MlmeEnqueue(pAd, APCLI_CTRL_STATE_MACHINE, APCLI_CTRL_JOIN_REQ_TIMEOUT, 0, NULL, ifIndex);
+ 	return;
+ }
+ 

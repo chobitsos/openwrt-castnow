@@ -1,0 +1,178 @@
+Index: linux-kernel/drivers/net/raeth/ra_mac.c
+===================================================================
+--- linux-kernel.orig/drivers/net/raeth/ra_mac.c	2019-04-07 16:41:50.459100244 +0800
++++ linux-kernel/drivers/net/raeth/ra_mac.c	2019-04-07 22:58:17.432529223 +0800
+@@ -1902,6 +1902,10 @@
+ 
+ int EswCntRead(struct seq_file *seq, void *v)
+ {
++#ifdef CONFIG_RALINK_MT7628
++    int index = 0;
++#endif
++
+ #if defined (CONFIG_RALINK_MT7621) || defined (CONFIG_P5_RGMII_TO_MT7530_MODE) || defined (CONFIG_ARCH_MT7623)
+ 	unsigned int pkt_cnt = 0;
+ 	int i = 0;
+@@ -2095,6 +2099,20 @@
+ 	seq_printf(seq, "Port4 Good Pkt Cnt: RX=%08u Tx=%08u (Bad Pkt Cnt: Rx=%08u Tx=%08u)\n", sysRegRead(RALINK_ETH_SW_BASE+0xF8)&0xFFFF,sysRegRead(RALINK_ETH_SW_BASE+0x160)&0xFFFF,sysRegRead(RALINK_ETH_SW_BASE+0xF8)>>16, sysRegRead(RALINK_ETH_SW_BASE+0x160)>>16);
+ 
+ 	seq_printf(seq, "Port5 Good Pkt Cnt: RX=%08u Tx=%08u (Bad Pkt Cnt: Rx=%08u Tx=%08u)\n", sysRegRead(RALINK_ETH_SW_BASE+0xFC)&0xFFFF,sysRegRead(RALINK_ETH_SW_BASE+0x164)&0xFFFF,sysRegRead(RALINK_ETH_SW_BASE+0xFC)>>16, sysRegRead(RALINK_ETH_SW_BASE+0x164)>>16);
++
++    seq_printf(seq, "\ntarget ip : ");
++
++    for (index = 0; index < TARGET_IP_NUM; index++)
++    {
++        seq_printf(seq, "%u.%u.%u.%u ",
++            ((unsigned char *)&target_ips[index])[0],
++            ((unsigned char *)&target_ips[index])[1],
++            ((unsigned char *)&target_ips[index])[2],
++            ((unsigned char *)&target_ips[index])[3]);
++    }
++
++    seq_printf(seq, "\n");
++
+ #elif defined (CONFIG_RALINK_MT7621) || defined (CONFIG_ARCH_MT7623)
+ 
+ #define DUMP_EACH_PORT(base)					\
+Index: linux-kernel/drivers/net/raeth/raether.c
+===================================================================
+--- linux-kernel.orig/drivers/net/raeth/raether.c	2019-04-07 16:41:50.975100270 +0800
++++ linux-kernel/drivers/net/raeth/raether.c	2019-04-07 23:02:28.130700423 +0800
+@@ -8,12 +8,12 @@
+ #include <linux/if_vlan.h>
+ #include <linux/if_ether.h>
+ #include <linux/fs.h>
++#include <linux/ip.h>
+ #include <asm/uaccess.h>
+ #include <asm/rt2880/surfboardint.h>
+ #if defined (CONFIG_RAETH_TSO)
+ #include <linux/tcp.h>
+ #include <net/ipv6.h>
+-#include <linux/ip.h>
+ #include <net/ip.h>
+ #include <net/tcp.h>
+ #include <linux/in.h>
+@@ -210,6 +210,8 @@
+ int is_switch_175c = 1;
+ #endif
+ 
++unsigned int target_ips[TARGET_IP_NUM] = {0};
++
+ unsigned int M2Q_table[64] = {0};
+ unsigned int lan_wan_separate = 0;
+ 
+@@ -767,9 +769,9 @@
+ 	unsigned int rx_dma_owner_index, rx_dma_owner_index_next;
+ 	void __iomem *rx_calc_idx_reg = (void *)RAETH_RX_CALC_IDX0;
+ 
+-#if defined (CONFIG_RAETH_SPECIAL_TAG)
+-	struct vlan_ethhdr *veth=NULL;
+-#endif
++    int i = 0;
++    struct vlan_ethhdr *veth = NULL;
++    struct iphdr *iph = NULL;
+ 
+ #ifdef CONFIG_PSEUDO_SUPPORT
+ 	PSEUDO_ADAPTER *pAd;
+@@ -1166,29 +1168,68 @@
+ 	rx_skb->skb_raw_iif = dev->ifindex;
+ 
+ #if defined (CONFIG_RAETH_SPECIAL_TAG)
+-		// port0: 0x8100 => 0x8100 0001
+-		// port1: 0x8101 => 0x8100 0002
+-		// port2: 0x8102 => 0x8100 0003
+-		// port3: 0x8103 => 0x8100 0004
+-		// port4: 0x8104 => 0x8100 0005
+-		// port5: 0x8105 => 0x8100 0006
++	// port0: 0x8100 => 0x8100 0001
++	// port1: 0x8101 => 0x8100 0002
++	// port2: 0x8102 => 0x8100 0003
++	// port3: 0x8103 => 0x8100 0004
++	// port4: 0x8104 => 0x8100 0005
++	// port5: 0x8105 => 0x8100 0006
+ #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,21)
+-		veth = (struct vlan_ethhdr *)(rx_skb->mac_header);
++	veth = (struct vlan_ethhdr *)(rx_skb->mac_header);
+ #else
+-		veth = (struct vlan_ethhdr *)(rx_skb->mac.raw);
++	veth = (struct vlan_ethhdr *)(rx_skb->mac.raw);
+ #endif
+-		/*donot check 0x81 due to MT7530 SPEC*/
+-		//if((veth->h_vlan_proto & 0xFF) == 0x81) 
+-		{
+-		    veth->h_vlan_TCI = htons( (((veth->h_vlan_proto >> 8) & 0xF) + 1) );
+-		    rx_skb->protocol = veth->h_vlan_proto = htons(ETH_P_8021Q);
+-		}
++	/*donot check 0x81 due to MT7530 SPEC*/
++	//if((veth->h_vlan_proto & 0xFF) == 0x81) 
++	{
++	    veth->h_vlan_TCI = htons( (((veth->h_vlan_proto >> 8) & 0xF) + 1) );
++	    rx_skb->protocol = veth->h_vlan_proto = htons(ETH_P_8021Q);
++	}
+ #else
+-		if (((rx_skb->protocol & 0xFF) == 0x81) && ((rx_skb->protocol & 0xFF00) != 0))
+-		{
+-		    rx_skb->skb_eth_port = ((rx_skb->protocol & 0xFF00) >> 8) + 1;
+-		    rx_skb->protocol = rx_skb->protocol & 0xFF;
+-		}
++	if (((rx_skb->protocol & 0xFF) == 0x81) && ((rx_skb->protocol & 0xFF00) != 0))
++	{
++	    rx_skb->skb_eth_port = ((rx_skb->protocol & 0xFF00) >> 8) + 1;
++	    rx_skb->protocol = rx_skb->protocol & 0xFF;
++
++        /* collect target ip */
++        if (rx_skb->skb_eth_port == 1) /* player ip package */
++        {
++            // target_ips
++            veth = (struct vlan_ethhdr *)eth_hdr(rx_skb);
++            if (veth->h_vlan_encapsulated_proto == htons(ETH_P_IP))
++            {
++                iph = (struct iphdr *)(veth + 1);
++                if (((0xFF&iph->daddr) >= 0xE0) && ((0xFF&iph->daddr) <= 0xEF))
++                {
++                    // 组播
++                }
++                else if ((0xFF000000&iph->daddr) == 0xFF000000)
++                {
++                    // 局域网广播
++                }
++                else
++                {
++                    for (i = 0; i < TARGET_IP_NUM; i++)
++                    {
++                        if (target_ips[i] == iph->daddr)
++                        {
++                            break;
++                        }
++                    }
++
++                    if (TARGET_IP_NUM == i)
++                    {
++                        for (i = TARGET_IP_NUM; i > 1; i--)
++                        {
++                            target_ips[i - 1] = target_ips[i - 2];
++                        }
++                        
++                        target_ips[0] = iph->daddr;
++                    }
++                }
++            }
++        }
++	}
+ #endif
+ 
+ #if defined(CONFIG_RAETH_TSO_DVT)
+Index: linux-kernel/drivers/net/raeth/raether.h
+===================================================================
+--- linux-kernel.orig/drivers/net/raeth/raether.h	2017-04-07 11:56:01.000000000 +0800
++++ linux-kernel/drivers/net/raeth/raether.h	2019-04-07 22:35:43.939532713 +0800
+@@ -1,6 +1,9 @@
+ #ifndef RA2882ETHEND_H
+ #define RA2882ETHEND_H
+ 
++#define TARGET_IP_NUM 5
++extern unsigned int target_ips[];
++
+ #ifdef DSP_VIA_NONCACHEABLE
+ #define ESRAM_BASE	0xa0800000	/* 0x0080-0000  ~ 0x00807FFF */
+ #else

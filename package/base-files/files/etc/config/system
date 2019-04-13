@@ -1,0 +1,8 @@
+config system
+	option hostname	Castnow-Light
+	option timezone	UTC-8
+
+config timeserver ntp
+	list server time1.aliyun.com
+	option enabled 1
+	option enable_server 0

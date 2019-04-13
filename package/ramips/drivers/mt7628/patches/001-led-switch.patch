@@ -1,0 +1,100 @@
+Index: mt7628-p4rev-120395/src/embedded/ap/ap_cfg.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/ap_cfg.c	2019-02-25 21:11:48.094773983 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/ap_cfg.c	2019-02-25 21:11:48.082773982 +0800
+@@ -422,6 +422,7 @@
+ #ifdef RTMP_RBUS_SUPPORT
+ #ifdef LED_CONTROL_SUPPORT
+ INT Set_WlanLed_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++INT Set_WlanLedEn_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ #endif /* LED_CONTROL_SUPPORT */
+ #endif /* RTMP_RBUS_SUPPORT */
+ 
+@@ -912,6 +913,7 @@
+ #ifdef RTMP_RBUS_SUPPORT
+ #ifdef LED_CONTROL_SUPPORT
+ 	{"WlanLed",					Set_WlanLed_Proc},
++	{"WlanLedEn",					Set_WlanLedEn_Proc},
+ #endif /* LED_CONTROL_SUPPORT */
+ #endif /* RTMP_RBUS_SUPPORT */
+ 
+@@ -12215,6 +12217,25 @@
+ 	};
+ 
+ 	return TRUE;
++}
++
++INT Set_WlanLedEn_Proc(
++	IN PRTMP_ADAPTER pAd,
++	IN RTMP_STRING *arg)
++{
++	BOOLEAN bWlanLedEn;
++
++	bWlanLedEn = (BOOLEAN) simple_strtol(arg, 0, 10);
++
++	{
++	    LED_EN(pAd) = !!bWlanLedEn;
++	    if (LED_EN(pAd))
++	    	RTMPSetLED(pAd, LED_LINK_UP);
++	    else
++	    	RTMPSetLED(pAd, LED_LINK_DOWN);
++	};
++
++	return TRUE;
+ }
+ #endif /* LED_CONTROL_SUPPORT */
+ #endif /* RTMP_RBUS_SUPPORT */
+Index: mt7628-p4rev-120395/src/embedded/common/rt_led.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/common/rt_led.c	2019-02-25 21:11:48.094773983 +0800
++++ mt7628-p4rev-120395/src/embedded/common/rt_led.c	2019-02-25 21:11:48.086773983 +0800
+@@ -106,7 +106,10 @@
+ 	}
+ #endif /* CONFIG_ATE */
+ 
+-
++	if (0 == LED_EN(pAd))
++	{
++		Status = LED_LINK_DOWN;
++	}
+ 
+ 	LedMode = 1;//LED_MODE(pAd);
+ #ifdef MT7628
+Index: mt7628-p4rev-120395/src/embedded/include/rt_led.h
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/include/rt_led.h	2019-02-25 21:11:48.094773983 +0800
++++ mt7628-p4rev-120395/src/embedded/include/rt_led.h	2019-02-25 21:11:48.090773983 +0800
+@@ -41,6 +41,7 @@
+ 
+ /* LED Mode */
+ #define LED_MODE(pAd) ((pAd)->LedCntl.MCULedCntl.field.LedMode & 0x7F)
++#define LED_EN(pAd) ((pAd)->LedCntl.LedEn)
+ #define LED_HW_CONTROL					19	/* set LED to controll by MAC registers instead of by firmware */
+ #define LED_MODE_DEFAULT            	0	/* value domain of pAd->LedCntl.LedMode and E2PROM */
+ #define LED_MODE_TWO_LED				1
+@@ -176,6 +177,7 @@
+ 	BOOLEAN				bLedOnScanning;
+ 	UCHAR				LedStatus;
+ 	UCHAR				LedMethod;
++	UCHAR				LedEn;
+ }LED_CONTROL, *PLED_CONTROL;
+ 
+ void RTMPStartLEDMode(IN RTMP_ADAPTER *pAd);
+Index: mt7628-p4rev-120395/src/embedded/common/cmm_profile.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/common/cmm_profile.c	2019-02-25 21:16:14.894180597 +0800
++++ mt7628-p4rev-120395/src/embedded/common/cmm_profile.c	2019-02-25 21:17:46.198227051 +0800
+@@ -4439,6 +4439,13 @@
+          pAd->LedCntl.LedMethod= LedMethod;
+          MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("LEDMethod = %d\n",pAd->LedCntl.LedMethod));
+       }
++      if (RTMPGetKeyParameter("LEDEn", tmpbuf, 10, pBuffer, TRUE))
++      {
++         UINT32 Leden;
++         Leden = simple_strtol(tmpbuf, 0, 10);
++         pAd->LedCntl.LedEn= Leden;
++         MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("LEDEn = %d\n",pAd->LedCntl.LedEn));
++      }
+ #endif
+ 	}while(0);
+ 

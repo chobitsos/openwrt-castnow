@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2013-2014 OpenWrt.org
+
+START=95
+USE_PROCD=1
+
+start_service() {
+	 btnd reboot_reset 38 &
+}
+
+stop_service() {
+	ps |grep "btnd" |grep -v "grep"|cut -c 0-6|xargs kill -9		
+}
+

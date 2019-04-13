@@ -1,0 +1,128 @@
+Index: mt7610e-p4rev-118062/src/ap/ap_cfg.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/ap/ap_cfg.c	2019-03-03 00:21:37.908792539 +0800
++++ mt7610e-p4rev-118062/src/ap/ap_cfg.c	2019-03-03 00:21:37.892792538 +0800
+@@ -274,6 +274,10 @@
+ 	IN	PRTMP_ADAPTER	pAdapter, 
+ 	IN	PSTRING			arg);
+ 
++INT	Set_HideAll_Proc(
++	IN	PRTMP_ADAPTER	pAdapter, 
++	IN	PSTRING			arg);
++
+ INT	Set_VLANID_Proc(
+ 	IN	PRTMP_ADAPTER	pAdapter, 
+ 	IN	PSTRING			arg);
+@@ -752,6 +756,7 @@
+ 	{"NoForwarding",				Set_NoForwarding_Proc},
+ 	{"NoForwardingBTNBSSID",		Set_NoForwardingBTNSSID_Proc},
+ 	{"HideSSID",					Set_HideSSID_Proc},
++	{"HideAll",					Set_HideAll_Proc},
+ 	{"IEEE80211H",				Set_IEEE80211H_Proc},
+ 	{"VLANID",					Set_VLANID_Proc},
+ 	{"VLANPriority",				Set_VLANPriority_Proc},
+@@ -4739,6 +4744,32 @@
+ 
+ 	return TRUE;
+ }
++
++INT	Set_HideAll_Proc(
++	IN	PRTMP_ADAPTER	pAd, 
++	IN	PSTRING			arg)
++{
++	BOOLEAN bHideAll;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++
++	bHideAll = simple_strtol(arg, 0, 10);
++
++	if (bHideAll == 1)
++		bHideAll = TRUE;
++	else if (bHideAll == 0)
++		bHideAll = FALSE;
++	else
++		return FALSE;  /*Invalid argument */
++	
++	if (pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll != bHideAll)
++	{
++		pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll = bHideAll;
++	}
++
++	DBGPRINT(RT_DEBUG_TRACE, ("IF(ra%d) Set_HideAll_Proc::(bHideAll=%d)\n", pObj->ioctl_if, pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll));
++
++	return TRUE;
++}
+ 
+ /* 
+     ==========================================================================
+Index: mt7610e-p4rev-118062/src/ap/ap_connect.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/ap/ap_connect.c	2019-03-03 00:21:37.908792539 +0800
++++ mt7610e-p4rev-118062/src/ap/ap_connect.c	2019-03-03 00:29:36.696817424 +0800
+@@ -113,6 +113,9 @@
+ 	UCHAR PhyMode, SupRateLen;
+ 	UINT8 TXWISize = pAd->chipCap.TXWISize;
+ 
++	if (pAd->ApCfg.MBSSID[apidx].bHideAll)
++		return;
++
+ 	if(!BeaconTransmitRequired(pAd, apidx, &pAd->ApCfg.MBSSID[apidx]))
+ 		return;
+ 
+Index: mt7610e-p4rev-118062/src/common/cmm_profile.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/common/cmm_profile.c	2019-03-03 00:21:37.908792539 +0800
++++ mt7610e-p4rev-118062/src/common/cmm_profile.c	2019-03-03 00:21:37.892792538 +0800
+@@ -2827,6 +2827,25 @@
+ 				}
+ 			}
+ 
++			/*HideAll*/
++			if(RTMPGetKeyParameter("HideAll", tmpbuf, 32, pBuffer, TRUE))
++			{
++				for (i = 0, macptr = rstrtok(tmpbuf,";"); macptr; macptr = rstrtok(NULL,";"), i++)
++				{
++					int apidx = i;
++
++					if (i >= pAd->ApCfg.BssidNum)
++						break;
++
++					if(simple_strtol(macptr, 0, 10) != 0)  /*Enable*/
++						pAd->ApCfg.MBSSID[apidx].bHideAll = TRUE;
++					else /*Disable*/
++						pAd->ApCfg.MBSSID[apidx].bHideAll = FALSE;                             
++
++					DBGPRINT(RT_DEBUG_TRACE, ("I/F(ra%d) HideAll=%d\n", i, pAd->ApCfg.MBSSID[apidx].bHideAll));
++				}
++			}
++
+ 			/*StationKeepAlive*/
+ 			if(RTMPGetKeyParameter("StationKeepAlive", tmpbuf, 32, pBuffer, TRUE))
+ 			{
+Index: mt7610e-p4rev-118062/src/include/rtmp.h
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/include/rtmp.h	2019-03-03 00:21:37.908792539 +0800
++++ mt7610e-p4rev-118062/src/include/rtmp.h	2019-03-03 00:21:37.892792538 +0800
+@@ -1400,6 +1400,7 @@
+ 	CHAR BeaconBuf[MAX_BEACON_SIZE];	/* NOTE: BeaconBuf should be 4-byte aligned */
+ 
+ 	BOOLEAN bHideSsid;
++	BOOLEAN bHideAll;
+ 	UINT16 StationKeepAliveTime;	/* unit: second */
+ 
+ 	/* VLAN related */
+Index: mt7610e-p4rev-118062/src/ap/ap_sync.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/ap/ap_sync.c	2019-03-03 00:31:58.176824778 +0800
++++ mt7610e-p4rev-118062/src/ap/ap_sync.c	2019-03-03 00:32:42.315487353 +0800
+@@ -126,7 +126,10 @@
+ 	for(apidx=0; apidx<pAd->ApCfg.BssidNum; apidx++)
+ 	{
+ 		RSNIe = IE_WPA;
+-	
++
++		if (pAd->ApCfg.MBSSID[apidx].bHideAll)
++			continue;
++
+ 		if ((pAd->ApCfg.MBSSID[apidx].MSSIDDev != NULL) &&
+ 			!(RTMP_OS_NETDEV_STATE_RUNNING(pAd->ApCfg.MBSSID[apidx].MSSIDDev)))
+ 		{

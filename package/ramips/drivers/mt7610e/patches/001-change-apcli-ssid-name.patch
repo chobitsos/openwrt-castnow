@@ -1,0 +1,43 @@
+Index: mt7610e-p4rev-118062/src/common/cmm_info.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/common/cmm_info.c	2019-02-25 22:18:02.318542711 +0800
++++ mt7610e-p4rev-118062/src/common/cmm_info.c	2019-02-25 22:18:44.226544889 +0800
+@@ -1920,7 +1920,7 @@
+ 	INT         Rssi = 0;
+ 	UINT        Rssi_Quality = 0;
+ 	NDIS_802_11_NETWORK_TYPE    wireless_mode;
+-	CHAR		Ssid[MAX_LEN_OF_SSID +1];
++	CHAR		Ssid[MAX_LEN_OF_SSID + 3];
+ 	STRING		SecurityStr[32] = {0};
+ 	NDIS_802_11_ENCRYPTION_STATUS	ap_cipher = Ndis802_11EncryptionDisabled;
+ 	NDIS_802_11_AUTHENTICATION_MODE	ap_auth_mode = Ndis802_11AuthModeOpen;
+@@ -1930,9 +1930,9 @@
+ 
+ 
+ 		/*SSID*/
+-	NdisZeroMemory(Ssid, (MAX_LEN_OF_SSID +1));
++	NdisZeroMemory(Ssid, (MAX_LEN_OF_SSID + 3));
+ 	if (RTMPCheckStrPrintAble((PCHAR)pBss->Ssid, pBss->SsidLen))
+-		NdisMoveMemory(Ssid, pBss->Ssid, pBss->SsidLen);
++		sprintf(Ssid, "<%s>", pBss->Ssid); 
+ 	else
+ 	{
+ 		INT idx = 0;
+@@ -1940,7 +1940,7 @@
+ 		for (idx = 0; (idx < 14) && (idx < pBss->SsidLen); idx++)
+ 			sprintf(Ssid + 2 + (idx*2), "%02X", (UCHAR)pBss->Ssid[idx]);
+ 	}
+-		sprintf(msg+strlen(msg),"%-33s", Ssid);      
++		sprintf(msg+strlen(msg),"%-35s", Ssid);      
+ 		
+ 		/*BSSID*/
+ 		sprintf(msg+strlen(msg),"%02x:%02x:%02x:%02x:%02x:%02x   ", 
+@@ -2130,7 +2130,7 @@
+ 	memset(msg, 0 , TotalLen);
+ 	sprintf(msg,"%s","\n");
+ 
+-	sprintf(msg+strlen(msg),"%-4s%-33s%-20s%-23s%-9s%-7s%-7s%-3s\n",
++	sprintf(msg+strlen(msg),"%-4s%-35s%-20s%-23s%-9s%-7s%-7s%-3s\n",
+ 	    "Ch", "SSID", "BSSID", "Security", "Siganl(%)", "W-Mode", " ExtCH"," NT");	
+ 
+ #ifdef WSC_INCLUDED
