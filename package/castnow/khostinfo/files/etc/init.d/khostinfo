@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2011 OpenWrt.org
+
+START=99
+
+start() {
+        local ipaddr=$(uci_get "network.lan.ipaddr")
+        local netmask=$(uci_get "network.lan.netmask")
+
+        rmmod khostinfo
+        insmod /lib/modules/3.10.14/khostinfo.ko lanip=${ipaddr} netmask=${netmask}
+}
+
+stop() {
+        rmmod khostinfo
+}

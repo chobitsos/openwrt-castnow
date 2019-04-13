@@ -1,0 +1,42 @@
+Index: mt7610e-p4rev-118062/src/ap/apcli_ctrl.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/ap/apcli_ctrl.c	2015-01-26 11:25:10.000000000 +0800
++++ mt7610e-p4rev-118062/src/ap/apcli_ctrl.c	2019-03-02 20:39:25.966521095 +0800
+@@ -563,7 +563,15 @@
+ 		pApCliEntry->ProbeReqCnt = 0;
+ 		
+ 		if (pAd->ApCfg.ApCliAutoConnectRunning == TRUE)
++		{
+ 			ApCliSwitchCandidateAP(pAd);
++		}
++		else if (pAd->MlmeAux.SsidBssTab.BssNr <= 0)
++		{
++			pAd->ApCfg.ApCliAutoConnectRunning = TRUE;
++			ApSiteSurvey(pAd, NULL, SCAN_ACTIVE, FALSE);
++		}
++        
+ 		return;
+ 	}
+ #endif /* APCLI_AUTO_CONNECT_SUPPORT */
+Index: mt7610e-p4rev-118062/src/ap/apcli_sync.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/ap/apcli_sync.c	2015-01-26 11:25:10.000000000 +0800
++++ mt7610e-p4rev-118062/src/ap/apcli_sync.c	2019-03-02 20:40:12.659192886 +0800
+@@ -533,6 +533,7 @@
+ 		pApCliEntry->ApCliMlmeAux.Bssid[4], 
+ 		pApCliEntry->ApCliMlmeAux.Bssid[5]));
+ 
++#if 0
+ 	if(!MAC_ADDR_EQUAL(pApCliEntry->ApCliMlmeAux.Bssid, ZERO_MAC_ADDR))
+ 	{
+ 		ApCliCtrlMsg.Status = MLME_SUCCESS;
+@@ -547,7 +548,9 @@
+ 	{
+ 		MlmeEnqueue(pAd, APCLI_CTRL_STATE_MACHINE, APCLI_CTRL_JOIN_REQ_TIMEOUT, 0, NULL, ifIndex);
+ 	}
++#endif
+ 
++	MlmeEnqueue(pAd, APCLI_CTRL_STATE_MACHINE, APCLI_CTRL_JOIN_REQ_TIMEOUT, 0, NULL, ifIndex);
+ 	return;
+ }
+ 

@@ -1,0 +1,41 @@
+Index: linux-kernel/drivers/net/raeth/raether.c
+===================================================================
+--- linux-kernel.orig/drivers/net/raeth/raether.c	2019-03-24 22:04:59.247583217 +0800
++++ linux-kernel/drivers/net/raeth/raether.c	2019-03-24 22:15:00.759928517 +0800
+@@ -1161,6 +1161,9 @@
+ 	dma_unmap_single(dev->dev.parent, rx_ring[rx_dma_owner_idx[rx_ring_no]].rxd_info1.PDP0, length, DMA_FROM_DEVICE);
+ #endif	
+ #endif
++        
++	rx_skb->skb_eth_port = 0;
++	rx_skb->skb_raw_iif = dev->ifindex;
+ 
+ #if defined (CONFIG_RAETH_SPECIAL_TAG)
+ 		// port0: 0x8100 => 0x8100 0001
+@@ -1180,6 +1183,12 @@
+ 		    veth->h_vlan_TCI = htons( (((veth->h_vlan_proto >> 8) & 0xF) + 1) );
+ 		    rx_skb->protocol = veth->h_vlan_proto = htons(ETH_P_8021Q);
+ 		}
++#else
++		if (((rx_skb->protocol & 0xFF) == 0x81) && ((rx_skb->protocol & 0xFF00) != 0))
++		{
++		    rx_skb->skb_eth_port = ((rx_skb->protocol & 0xFF00) >> 8) + 1;
++		    rx_skb->protocol = rx_skb->protocol & 0xFF;
++		}
+ #endif
+ 
+ #if defined(CONFIG_RAETH_TSO_DVT)
+Index: linux-kernel/include/linux/skbuff.h
+===================================================================
+--- linux-kernel.orig/include/linux/skbuff.h	2017-04-07 11:55:37.000000000 +0800
++++ linux-kernel/include/linux/skbuff.h	2019-03-24 22:10:37.203600782 +0800
+@@ -474,6 +474,9 @@
+ 
+ 	int			skb_iif;
+ 
++	int			skb_raw_iif;
++	int			skb_eth_port;
++
+ 	__u32			rxhash;
+ 
+ 	__be16			vlan_proto;

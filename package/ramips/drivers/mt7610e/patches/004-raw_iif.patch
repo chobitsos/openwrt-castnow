@@ -1,0 +1,12 @@
+Index: mt7610e-p4rev-118062/src/os/linux/rt_linux.c
+===================================================================
+--- mt7610e-p4rev-118062.orig/src/os/linux/rt_linux.c	2019-03-24 15:10:12.471734461 +0800
++++ mt7610e-p4rev-118062/src/os/linux/rt_linux.c	2019-03-24 15:11:13.000165802 +0800
+@@ -2112,6 +2112,7 @@
+ {
+ 	struct sk_buff *pRxPkt = RTPKT_TO_OSPKT(pNetPkt);
+ 
++	pRxPkt->skb_raw_iif = pRxPkt->dev->ifindex;
+ 
+ 	netif_rx(pRxPkt);
+ }

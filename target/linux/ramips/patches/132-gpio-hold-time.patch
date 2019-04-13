@@ -1,0 +1,13 @@
+Index: linux-3.10.14/drivers/char/ralink_gpio.c
+===================================================================
+--- linux-3.10.14.orig/drivers/char/ralink_gpio.c	2019-02-24 12:31:21.787554762 +0800
++++ linux-3.10.14/drivers/char/ralink_gpio.c	2019-02-24 12:33:44.784334789 +0800
+@@ -2795,7 +2795,7 @@
+ 			}
+ 			else {
+ 				record[i].rising = now;
+-				if (time_before(now, record[i].falling + 200L)) {
++				if (time_before(now, record[i].falling + 2400L)) {
+ 					schedule_work(&gpio_event_click);
+ 				}
+ 				else {

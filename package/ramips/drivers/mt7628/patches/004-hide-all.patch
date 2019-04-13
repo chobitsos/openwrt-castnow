@@ -1,0 +1,120 @@
+Index: mt7628-p4rev-120395/src/embedded/ap/ap_cfg.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/ap_cfg.c	2019-03-02 23:52:07.283488569 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/ap_cfg.c	2019-03-02 23:52:07.255488567 +0800
+@@ -217,6 +217,8 @@
+ 
+ INT Set_HideSSID_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
++INT Set_HideAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
++
+ INT Set_VLANID_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+ 
+ INT Set_VLANPriority_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+@@ -585,6 +587,7 @@
+ 	{"NoForwarding",				Set_NoForwarding_Proc},
+ 	{"NoForwardingBTNBSSID",		Set_NoForwardingBTNSSID_Proc},
+ 	{"HideSSID",					Set_HideSSID_Proc},
++	{"HideAll",					Set_HideAll_Proc},
+ 	{"IEEE80211H",				Set_IEEE80211H_Proc},
+ 	{"VLANID",					Set_VLANID_Proc},
+ 	{"VLANPriority",				Set_VLANPriority_Proc},
+@@ -5422,6 +5425,32 @@
+ 
+ 	return TRUE;
+ }
++
++INT	Set_HideAll_Proc(
++	IN	PRTMP_ADAPTER	pAd,
++	IN	RTMP_STRING *arg)
++{
++	BOOLEAN bHideAll;
++	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
++
++	bHideAll = simple_strtol(arg, 0, 10);
++
++	if (bHideAll == 1)
++		bHideAll = TRUE;
++	else if (bHideAll == 0)
++		bHideAll = FALSE;
++	else
++		return FALSE;  /*Invalid argument */
++
++	if (pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll != bHideAll)
++	{
++		pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll = bHideAll;
++	}
++
++	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("IF(ra%d) Set_HideAll_Proc::(HideAll=%d)\n", pObj->ioctl_if, pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideAll));
++
++	return TRUE;
++}
+ 
+ /*
+     ==========================================================================
+Index: mt7628-p4rev-120395/src/embedded/ap/ap_connect.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/ap_connect.c	2019-03-02 23:52:07.283488569 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/ap_connect.c	2019-03-02 23:57:07.954790247 +0800
+@@ -256,6 +256,9 @@
+ 	UINT8 TXWISize = pAd->chipCap.TXWISize;
+ 	UINT8 tx_hw_hdr_len = pAd->chipCap.tx_hw_hdr_len;
+ 
++	if(pMbss->bHideAll)
++		return;
++
+ 	if(!BeaconTransmitRequired(pAd, apidx, pMbss))
+ 		return;
+ 
+@@ -469,6 +472,9 @@
+ 	if (!pMbss || !pMbss->bcn_buf.BeaconPkt)
+ 		return;
+ 
++	if (pMbss->bHideAll)
++		return;
++
+ 	tmac_info = (UCHAR *)GET_OS_PKT_DATAPTR(pMbss->bcn_buf.BeaconPkt);
+ 	if (pAd->chipCap.hif_type == HIF_MT)
+ 	{
+Index: mt7628-p4rev-120395/src/embedded/common/cmm_profile.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/common/cmm_profile.c	2019-03-02 23:52:07.283488569 +0800
++++ mt7628-p4rev-120395/src/embedded/common/cmm_profile.c	2019-03-02 23:52:07.267488568 +0800
+@@ -3126,6 +3126,25 @@
+ 				}
+ 			}
+ 
++			/*HideAll*/
++			if(RTMPGetKeyParameter("HideAll", tmpbuf, 32, pBuffer, TRUE))
++			{
++				for (i = 0, macptr = rstrtok(tmpbuf,";"); macptr; macptr = rstrtok(NULL,";"), i++)
++				{
++					int apidx = i;
++
++					if (i >= pAd->ApCfg.BssidNum)
++						break;
++
++					if(simple_strtol(macptr, 0, 10) != 0)  /*Enable*/
++						pAd->ApCfg.MBSSID[apidx].bHideAll = TRUE;
++					else /*Disable*/
++						pAd->ApCfg.MBSSID[apidx].bHideAll = FALSE;
++
++					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("I/F(ra%d) HideAll=%d\n", i, pAd->ApCfg.MBSSID[apidx].bHideAll));
++				}
++			}
++
+ 			/*StationKeepAlive*/
+ 			if(RTMPGetKeyParameter("StationKeepAlive", tmpbuf, 32, pBuffer, TRUE))
+ 			{
+Index: mt7628-p4rev-120395/src/embedded/include/rtmp.h
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/include/rtmp.h	2019-03-02 23:52:07.283488569 +0800
++++ mt7628-p4rev-120395/src/embedded/include/rtmp.h	2019-03-02 23:52:07.267488568 +0800
+@@ -1692,6 +1692,7 @@
+ 
+ 	CHAR Ssid[MAX_LEN_OF_SSID];
+ 	UCHAR SsidLen;
++	BOOLEAN bHideAll;
+ 	BOOLEAN bHideSsid;
+ 
+ 	USHORT CapabilityInfo;

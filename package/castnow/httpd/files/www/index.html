@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Expires" content="0">
+    <link rel="stylesheet" href="css/router.css">
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="js/layer/layer.js"></script>
+    <script type="text/javascript" src="js/jquery.md5.js"></script>
+    <script type="text/javascript" src="js/lang.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/router.js"></script>
+    <script>dw("<title>"+title+"</title>");</script>
+  </head>
+<body>
+    <div class="top">
+      <div class="wrap">
+        <div class="logo"><img src="images/logo-s.png"></div>
+      </div>
+    </div>
+
+    <!-- 设置过密码的主页面 -->
+    <div class="wrap" id="account_login">
+      <div class="content">
+        <div class="img-box"><a href="http://www.castnow.com/" target="_blank"><div class="index_logo"></div></a></div>
+        <p class="index_text"><script>dw(welcome_note)</script></p>
+        <div class="con">
+          <ul class="list">
+            <li>
+              <span class="sp-l"><script>dw(password_manage)</script></span>
+              <span class="sp-r">
+                <label for="login_pwd"><script>dw(input_password_note)</script></label>
+                <input type="password" name="login_pwd" class="inpt" id="login_pwd" autocomplete="off">
+              </span>
+            </li>
+          </ul>
+          <div class="box" style="margin-top:10px;">
+            <a href="javascript:;" class="btn" id="user_login"><script>dw(_confirm)</script></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 设置过密码的主页面 end-->
+  </body>
+</html>
+<script type="text/javascript">
+  checkConfig();
+</script>

@@ -1,0 +1,12 @@
+Index: mt7628-p4rev-120395/src/embedded/os/linux/rt_linux.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/os/linux/rt_linux.c	2015-02-27 14:13:06.000000000 +0800
++++ mt7628-p4rev-120395/src/embedded/os/linux/rt_linux.c	2019-03-24 15:03:21.660600727 +0800
+@@ -2307,6 +2307,7 @@
+ {
+ 	struct sk_buff *pRxPkt = RTPKT_TO_OSPKT(pNetPkt);
+ 
++	pRxPkt->skb_raw_iif = pRxPkt->dev->ifindex;
+ 
+ 	netif_rx(pRxPkt);
+ }

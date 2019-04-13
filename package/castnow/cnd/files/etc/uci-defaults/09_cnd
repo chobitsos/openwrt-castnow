@@ -1,0 +1,18 @@
+#!/bin/sh
+
+touch /etc/config/castnow
+
+auto=`uci get castnow.@server[0].auto 2> /dev/null`
+if [ "$auto" != "" ] ; then
+	exit 0
+fi
+
+uci -q batch <<-EOT
+		add castnow server
+		set castnow.@server[0].auto=1
+		set castnow.@server[0].log_interval=60
+		set castnow.@server[0].server_addr=http://dvdnow.dvdnowlink.com/api/CastNowReportConfigInfo
+		commit castnow
+EOT
+
+exit 0
