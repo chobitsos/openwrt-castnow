@@ -76,6 +76,22 @@ Index: mt7628-p4rev-120395/src/embedded/ap/ap_connect.c
  	tmac_info = (UCHAR *)GET_OS_PKT_DATAPTR(pMbss->bcn_buf.BeaconPkt);
  	if (pAd->chipCap.hif_type == HIF_MT)
  	{
+Index: mt7628-p4rev-120395/src/embedded/ap/ap_sync.c
+===================================================================
+--- mt7628-p4rev-120395.orig/src/embedded/ap/ap_sync.c	2015-02-27 14:13:05.000000000 +0800
++++ mt7628-p4rev-120395/src/embedded/ap/ap_sync.c	2019-05-26 14:12:18.693336335 +0800
+@@ -84,7 +84,10 @@
+ 		mbss = &pAd->ApCfg.MBSSID[apidx];
+ 		wdev = &mbss->wdev;
+ 		RSNIe = IE_WPA;
+-	
++
++		if (mbss->bHideAll)
++			continue;
++
+ 		if ((wdev->if_dev == NULL) || ((wdev->if_dev != NULL) &&
+ 			!(RTMP_OS_NETDEV_STATE_RUNNING(wdev->if_dev))))
+ 		{
 Index: mt7628-p4rev-120395/src/embedded/common/cmm_profile.c
 ===================================================================
 --- mt7628-p4rev-120395.orig/src/embedded/common/cmm_profile.c	2019-03-02 23:52:07.283488569 +0800

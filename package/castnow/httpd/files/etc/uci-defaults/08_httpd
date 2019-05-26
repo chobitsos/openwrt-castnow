@@ -4,6 +4,9 @@ touch /etc/config/castnow
 
 lang=`uci get castnow.@web[0].lang 2> /dev/null`
 if [ "$lang" != "" ] ; then
+	# update fwversion only
+	uci set castnow.@web[0].version=`cat /etc/castnow.version`
+	uci commit castnow
 	exit 0
 fi
 
