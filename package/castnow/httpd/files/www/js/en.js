@@ -322,5 +322,9 @@ var castnow_input_server="Please Input Server Address.";
 var castnow_input_encrypt_key="Please Input Encrypt Key.";
 var castnow_input_valid_interval="Please Input Valid Log Interval.";
 var castnow_input_valid_time="Please Input Valid Reboot Time.";
+var wifi_mode="WIFI mode";
+var wifi_mode_selecte="Select wifi mode";
+var wifi_mode_standard="Standard";
+var wifi_mode_smart="Smart";
 
 function dw(str){document.write(str);}

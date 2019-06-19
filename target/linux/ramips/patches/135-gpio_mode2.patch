@@ -1,0 +1,36 @@
+Index: linux-kernel/drivers/char/ralink_gpio.c
+===================================================================
+--- linux-kernel.orig/drivers/char/ralink_gpio.c	2019-06-17 23:44:00.451288578 +0800
++++ linux-kernel/drivers/char/ralink_gpio.c	2019-06-17 23:45:58.121438112 +0800
+@@ -318,6 +318,15 @@
+ 	req &= RALINK_GPIO_DATA_MASK;
+ 
+ 	switch(req) {
++#if defined (CONFIG_RALINK_MT7628)
++	case RALINK_GPIO_MODE2_READ:
++		tmp = le32_to_cpu(*(volatile u32 *)(RALINK_REG_GPIOMODE2));
++		put_user(tmp, (int __user *)arg);
++		break;
++	case RALINK_GPIO_MODE2_WRITE:
++		*(volatile u32 *)(RALINK_REG_GPIOMODE2) = cpu_to_le32(arg);
++		break;
++#endif
+ 	case RALINK_GPIO_SET_DIR:
+ 		*(volatile u32 *)(RALINK_REG_PIODIR) = cpu_to_le32(arg);
+ 		break;
+Index: linux-kernel/drivers/char/ralink_gpio.h
+===================================================================
+--- linux-kernel.orig/drivers/char/ralink_gpio.h	2017-04-07 11:56:13.000000000 +0800
++++ linux-kernel/drivers/char/ralink_gpio.h	2019-06-17 23:45:25.976613278 +0800
+@@ -76,6 +76,11 @@
+ #define RALINK_GPIO_REG_IRQ		0x0A
+ #define RALINK_GPIO_LED_SET		0x41
+ 
++#if defined (CONFIG_RALINK_MT7628)
++#define	RALINK_GPIO_MODE2_READ		0x04
++#define	RALINK_GPIO_MODE2_WRITE		0x05
++#endif
++
+ #if defined (RALINK_GPIO_HAS_2722)
+ 
+ #define	RALINK_GPIO2722_SET_DIR		0x51

@@ -1639,8 +1639,41 @@ function set_language(str) {
     });
 }
 
-//获取Router Info
+function get_wifi_mode() {
+    $.ajax({
+        type: "POST",
+        url: actionUrl + "fname=system&opt=wifimode&function=get&math=" + Math.random(),
+        dataType: "json",
+        success: function(data) {
+            if (data.error == 0) {
+                if (data.mode == 'standard') {
+                    $("#wifi_mode_smart").removeClass("selected");
+                    $("#wifi_mode_standard").addClass("selected");
+                } else {
+                    $("#wifi_mode_smart").addClass("selected");
+                    $("#wifi_mode_standard").removeClass("selected");
+                }
+            } else {
+                locationUrl(data.error);
+            }
+        }
+    });
+}
 
+function set_wifi_mode(mode) {
+    $.ajax({
+        type: "POST",
+        url: actionUrl + "fname=system&opt=wifimode&function=set&mode=" + mode + "&math=" + Math.random(),
+        dataType: "json",
+        success: function(data) {
+            if (data.error == '0') {
+                getMsg(setting_success);
+            } else {
+                locationUrl(data.error);
+            }
+        }
+    });
+}
 
 function init() {
     router.getDynamicInfo();

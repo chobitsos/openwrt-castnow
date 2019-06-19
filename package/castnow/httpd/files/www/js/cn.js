@@ -322,5 +322,9 @@ var castnow_input_server="请输入服务器地址.";
 var castnow_input_encrypt_key="请输入加密Key.";
 var castnow_input_valid_interval="请输入合法的Log间隔.";
 var castnow_input_valid_time="请输入合法的重启时间.";
+var wifi_mode="WIFI模式";
+var wifi_mode_selecte="WIFI模式选择";
+var wifi_mode_standard="标准模式";
+var wifi_mode_smart="智能模式";
 
 function dw(str){document.write(str);}

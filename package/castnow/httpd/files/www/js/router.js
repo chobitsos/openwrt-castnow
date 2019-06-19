@@ -621,6 +621,7 @@ $(function () {
         getNTP();
         checkVersion();
         get_language();
+        get_wifi_mode();
       }, 50);
     } else if (id == 'm_8') {
       if (!interval_flag) {
