@@ -326,5 +326,6 @@ var wifi_mode="WIFI mode";
 var wifi_mode_selecte="Select wifi mode";
 var wifi_mode_standard="Standard";
 var wifi_mode_smart="Smart";
+var dmz_host="Host Addr";
 
 function dw(str){document.write(str);}

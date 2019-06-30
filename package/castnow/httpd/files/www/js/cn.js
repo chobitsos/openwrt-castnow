@@ -326,5 +326,6 @@ var wifi_mode="WIFI模式";
 var wifi_mode_selecte="WIFI模式选择";
 var wifi_mode_standard="标准模式";
 var wifi_mode_smart="智能模式";
+var dmz_host="主机地址";
 
 function dw(str){document.write(str);}

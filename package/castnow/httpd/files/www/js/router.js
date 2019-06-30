@@ -609,6 +609,7 @@ $(function () {
         interval_flag = true;
       }
       setTimeout(function(){
+        getDMZ();
         getClientList();
       }, 50);
     } else if (id == 'm_7') {
@@ -1855,6 +1856,62 @@ $(function () {
     setUPnP(newstat);
     if(newstat == 1)
       setTimeout(getClientList, 1000);
+  });
+  $("#dmz_switch").unbind('click').click(function(){
+    if($("#dmz_switch").hasClass('open2')){
+	  $("#dmz_host").parent().parent().hide();
+    }else{
+	  $("#dmz_host").parent().parent().show();
+    }
+  });
+  function getDMZ() {
+    $.ajax({
+      type: "POST",
+      url: actionUrl + "fname=net&opt=dmz&function=get&math=" + Math.random(),
+      dataType: "json",
+      success: function (data) {
+        if(data.error == 0){
+          if(data.enable){
+              $("#dmz_switch").addClass('open2');
+              $("#dmz_host").val(data.hostaddr);
+              $("#dmz_host").parent().parent().show();
+          }else{
+              $("#dmz_switch").removeClass('open2');
+              $("#dmz_host").parent().parent().hide();
+          }
+        } else {
+          locationUrl(data.error);
+        }
+      }
+    });
+  }
+  $("#dmz_btn").unbind('click').click(function(){
+    var enable = $("#dmz_switch").hasClass('open2');
+    var hostaddr = $("#dmz_host").val();
+
+    if(enable) {
+      enable = 1;
+      if (!checkIP(hostaddr)) {
+        getMsg(invalid_ip_address, 1, '#dmz_host');
+        return;
+      }
+    } else {
+        enable = 0;
+        hostaddr = "";
+    }
+
+    $.ajax({
+      type: "POST",
+      url: actionUrl + "fname=net&opt=dmz&function=set&enable="+enable+"&hostaddr="+hostaddr+"&math=" + Math.random(),
+      dataType: "json",
+      success: function (data) {
+        if(data.error == 0){
+          getMsg(setting_success);
+        } else {
+          locationUrl(data.error);
+        }
+      }
+    });
   });
   $("#castnow_onoff").unbind('click').click(function(){
     if($(".castnow_auto").is(':hidden')){
